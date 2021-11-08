@@ -13,7 +13,7 @@ namespace NetworkFramework.Framework.Events
         /// Fired when a client is connected to the TCP server.
         /// </summary>
         public event Func<TcpClient, Task> OnClientConnected;
-        public event Func<byte[], Task> OnDataReceived
+        public event Func<TCPPacket, Task> OnDataReceived;
         public void ClientConnect(TcpClient _client)
         {
             OnClientConnected(_client);

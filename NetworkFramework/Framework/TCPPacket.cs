@@ -24,7 +24,7 @@ namespace NetworkFramework.Framework
             readPos = 0;
             buffer = _data.ToList();
         }
-
+        #region Write Functions
         public void WriteByte(byte _data)
         {
             buffer.Add(_data);
@@ -40,9 +40,11 @@ namespace NetworkFramework.Framework
         }
         public void WriteShort(short _data)
         {
-
+            buffer.AddRange(BitConverter.GetBytes(_data));
         }
+        #endregion
 
+        #region Read Functions
         public byte ReadByte(bool increasePos = true)
         {
             if (buffer.Count > readPos)
@@ -128,5 +130,6 @@ namespace NetworkFramework.Framework
                 throw new Exception("Failed to read byte array, I am already at the end of the stream");
             }
         }
+        #endregion
     }
 }

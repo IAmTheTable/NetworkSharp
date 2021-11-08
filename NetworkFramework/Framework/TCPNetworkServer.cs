@@ -14,6 +14,7 @@ namespace NetworkFramework.Framework
     public class TCPNetworkServer
     {
         public readonly TCPServerEventHandler tcpServerEventHandler;
+        public List<TCPNetworkClient> ConnectedClients = new();
 
         private TcpListener tcpListener;
         private int serverPort;
@@ -40,9 +41,8 @@ namespace NetworkFramework.Framework
             catch (System.Net.Sockets.SocketException e)
             {
                 // Catch any exceptions and inform the user.
-                throw new Exception(e.Message);
+                Console.WriteLine($"There was an error while starting server at {tcpListener.LocalEndpoint}");
             }
-
             tcpServerEventHandler.OnClientConnected += TcpServerEventHandler_OnClientConnected;
 
             tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
@@ -54,6 +54,8 @@ namespace NetworkFramework.Framework
             {
                 // Get the connected client
                 TcpClient ConnectedClient = tcpListener.EndAcceptTcpClient(ar);
+                tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
+
                 tcpServerEventHandler.ClientConnect(ConnectedClient);
             }
             catch(Exception e)
@@ -62,15 +64,13 @@ namespace NetworkFramework.Framework
             }
         }
 
-        public static TCPNetworkServer Create(int _port)
-        {
+        public static TCPNetworkServer Create(int _port) => new(_port);
 
-            return new(_port);
-        }
-
-        private static Task TcpServerEventHandler_OnClientConnected(TcpClient arg)
+        private async Task TcpServerEventHandler_OnClientConnected(TcpClient _client)
         {
-            throw new NotImplementedException();
+            TCPNetworkClient ConnectedClient = new(_client);
+            ConnectedClients.Add(ConnectedClient);
+
         }
     }
 }
