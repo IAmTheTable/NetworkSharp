@@ -63,7 +63,6 @@ namespace NetworkFramework.Framework
 
             }
         }
-
         public static TCPNetworkServer Create(int _port) => new(_port);
 
         private async Task TcpServerEventHandler_OnClientConnected(TcpClient _client)
