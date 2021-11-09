@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 using System.IO;
 using System.Net;
@@ -26,26 +27,30 @@ namespace NetworkFramework.Framework
         private TCPNetworkServer(int _port)
         {
             serverPort = _port;
-
-            try
+            tcpServerEventHandler = new TCPServerEventHandler();
+            new Thread(() =>
             {
-                Console.WriteLine("Binding port...");
-                tcpListener = new(IPAddress.Any, serverPort);
-                Console.WriteLine("Bound port.");
+                try
+                {
+                    Console.WriteLine("Binding port...");
+                    tcpListener = new(IPAddress.Any, serverPort);
+                    Console.WriteLine("Bound port.");
 
-                Console.WriteLine("Starting server...");
-                tcpListener.Start();
+                    Console.WriteLine("Starting server...");
+                    tcpListener.Start();
 
-                Console.WriteLine($"Server started at {tcpListener.LocalEndpoint}");
-            }
-            catch (System.Net.Sockets.SocketException e)
-            {
-                // Catch any exceptions and inform the user.
-                Console.WriteLine($"There was an error while starting server at {tcpListener.LocalEndpoint}");
-            }
-            tcpServerEventHandler.OnClientConnected += TcpServerEventHandler_OnClientConnected;
+                    Console.WriteLine($"Server started at {tcpListener.LocalEndpoint}");
+                }
+                catch (System.Net.Sockets.SocketException e)
+                {
+                    // Catch any exceptions and inform the user.
+                    Console.WriteLine($"There was an error while starting server at {tcpListener.LocalEndpoint}");
+                }
+                tcpServerEventHandler.OnClientConnected += TcpServerEventHandler_OnClientConnected;
 
-            tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
+                tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
+                Thread.Sleep(-1);
+            }).Start();
         }
 
         private void TCPClientAcceptCallback(IAsyncResult ar)
@@ -56,20 +61,18 @@ namespace NetworkFramework.Framework
                 TcpClient ConnectedClient = tcpListener.EndAcceptTcpClient(ar);
                 tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
 
-                tcpServerEventHandler.ClientConnect(ConnectedClient);
+                tcpServerEventHandler.ClientConnect(new TCPNetworkClient(ConnectedClient));
             }
             catch(Exception e)
             {
-
+                Console.WriteLine("there was an error while a client tried connecting");
             }
         }
         public static TCPNetworkServer Create(int _port) => new(_port);
 
-        private async Task TcpServerEventHandler_OnClientConnected(TcpClient _client)
+        private async Task TcpServerEventHandler_OnClientConnected(TCPNetworkClient _client)
         {
-            TCPNetworkClient ConnectedClient = new(_client);
-            ConnectedClients.Add(ConnectedClient);
-
+            ConnectedClients.Add(_client);
         }
     }
 }

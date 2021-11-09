@@ -11,9 +11,14 @@ namespace NetworkFramework.Framework.Events
     public class TCPClientEventHandler
     {
         public event Func<TCPPacket, Task> OnDataRecieved;
+        public event Func<Task> OnConnectToServer;
         public void DataRecieved(TCPPacket _packet)
         {
             OnDataRecieved(_packet);
+        }
+        public void ConnectToServer()
+        {
+            OnConnectToServer();
         }
     }
 }

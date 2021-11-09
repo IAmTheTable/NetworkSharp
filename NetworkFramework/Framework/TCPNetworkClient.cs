@@ -13,8 +13,9 @@ namespace NetworkFramework.Framework
 {
     public class TCPNetworkClient
     {
-        public TCPClientEventHandler tcpClientEventHandler;
+        public readonly TCPClientEventHandler tcpClientEventHandler;
         public int maxBufferSize = 4096;
+        public EndPoint clientEndpoint;
 
         private byte[] dataBuffer;
 
@@ -27,6 +28,35 @@ namespace NetworkFramework.Framework
         {
             client = _client;
             dataBuffer = new byte[maxBufferSize];
+            clientEndpoint = _client.Client.RemoteEndPoint;
+            tcpClientEventHandler = new TCPClientEventHandler();
+        }
+
+        public TCPNetworkClient()
+        {
+            client = new TcpClient();
+            dataBuffer = new byte[maxBufferSize];
+            clientEndpoint = new IPEndPoint(IPAddress.Any, 0);
+            tcpClientEventHandler = new TCPClientEventHandler();
+        }
+
+        public void Connect(string _ipAddress, int _port)
+        {
+            if(!client.Connected)
+            {
+                client.BeginConnect(_ipAddress, _port, OnConnectedToServer, null);
+            }
+        }
+
+        private void OnConnectedToServer(IAsyncResult ar)
+        {
+            tcpClientEventHandler.OnConnectToServer += TcpClientEventHandler_OnConnectToServer;
+            tcpClientEventHandler.ConnectToServer();
+        }
+
+        private async Task TcpClientEventHandler_OnConnectToServer()
+        {
+            Console.WriteLine("Connected");
         }
 
         public void StartRecieving()
