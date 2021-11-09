@@ -13,6 +13,7 @@ namespace NetworkFramework.Framework
 {
     public class TCPNetworkClient
     {
+        public TCPClientEventHandler tcpClientEventHandler;
         public int maxBufferSize = 4096;
 
         private byte[] dataBuffer;
@@ -28,7 +29,6 @@ namespace NetworkFramework.Framework
             dataBuffer = new byte[maxBufferSize];
         }
 
-
         public void StartRecieving()
         {
             NetworkStream Stream = client.GetStream();
@@ -39,6 +39,9 @@ namespace NetworkFramework.Framework
         private void OnTcpDataRecieved(IAsyncResult ar)
         {
             int BytesRead = client.GetStream().EndRead(ar);
+            client.GetStream().BeginRead(dataBuffer, 0, maxBufferSize, OnTcpDataRecieved, null);
+
+            tcpClientEventHandler.DataRecieved(new TCPPacket(dataBuffer));
         }
     }
 }
