@@ -8,11 +8,11 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
-namespace NetworkFramework.Framework
+namespace NetworkFramework.Framework.TCP
 {
     public class TCPPacket
     {
-        private List<byte> buffer;
+        private readonly List<byte> buffer;
         private int readPos;
         public TCPPacket()
         {
@@ -98,7 +98,7 @@ namespace NetworkFramework.Framework
             if (buffer.Count > readPos)
             {
                 int StringLength = BitConverter.ToInt32(buffer.ToArray(), readPos);
-                string value = "";
+                string value;
 
                 if (increasePos)
                 {
@@ -131,5 +131,13 @@ namespace NetworkFramework.Framework
             }
         }
         #endregion
+
+        public byte[] ToArray()
+        {
+            // insert the packet length at the beginning
+            buffer.InsertRange(0, BitConverter.GetBytes(buffer.Count + 4));
+            return buffer.ToArray();
+        }
+        public int GetLength() => buffer.Count;
     }
 }
