@@ -5,6 +5,11 @@ namespace NetworkFramework.Framework.UDP.Events
 {
     public class UDPServerEventHandler
     {
+        public UDPServerEventHandler()
+        {
+            OnClientConnected += (UDPNetworkClient) => new Task(() => { });
+            OnDataReceived += (UDPPacket, UDPNetworkClient) => new Task(() => { });
+        }
         /// <summary>
         /// Called when a client is connected
         /// </summary>

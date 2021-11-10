@@ -134,7 +134,7 @@ namespace NetworkFramework.Framework.UDP
         }
         #endregion
         public void InsertLength() => buffer.InsertRange(0, BitConverter.GetBytes(buffer.Count));
-        public byte[] ToArray() => buffer.ToArray();
+        public byte[] ToArray() => buffer.GetRange(readPos, GetLength() - readPos).ToArray();
         public int GetLength() => buffer.Count;
     }
 }

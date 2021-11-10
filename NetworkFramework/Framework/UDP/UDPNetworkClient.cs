@@ -9,81 +9,97 @@ using System.Net.Sockets;
 
 
 using NetworkFramework.Framework.UDP.Events;
+using System.Threading.Tasks;
 
 namespace NetworkFramework.Framework.UDP
 {
     public class UDPNetworkClient
     {
+        public readonly int maxBufferSize = 4096;
         public readonly UDPClientEventHandler Events;
-        public readonly UdpClient client;
+        public readonly Socket client;
 
-        private IPEndPoint Endpoint;
+        private IPEndPoint ServerEndpoint;
+        private readonly IPEndPoint LocalEndpoint;
 
         private bool isReading;
-        public UDPNetworkClient(UdpClient _client)
+        /// <summary>
+        /// Create a new UDP Client instance(used by the server).
+        /// </summary>
+        /// <param name="_client"></param>
+        public UDPNetworkClient(IPEndPoint _serverEp, IPEndPoint _localEp = null)
         {
-            Endpoint = (IPEndPoint)_client.Client.LocalEndPoint;
-            
-            client = _client;
-            /*client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            client.Client.Bind(Endpoint);*/
+            client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+            LocalEndpoint = _localEp ?? new IPEndPoint(IPAddress.Any, 0);
+            ServerEndpoint = _serverEp;
 
             Events = new UDPClientEventHandler();
-
-            Events.OnConnectToServer += async () => { };
-            Events.OnDataReceived += async (UDPPacket) => { };
         }
         /// <summary>
         /// Create a new UDP Client instance.
         /// </summary>
         /// <param name="_port">The port the client binds to(not server port).</param>
-        public UDPNetworkClient(int _port)
+        public UDPNetworkClient()
         {
-            client = new UdpClient();
+            client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
 
             Events = new UDPClientEventHandler();
-            Events.OnConnectToServer += async () => { };
-            Events.OnDataReceived += async (UDPPacket) => { };
         }
-        public IPEndPoint GetEndpoint() => Endpoint;
+        public IPEndPoint GetServerEndpoint() => ServerEndpoint;
+        public IPEndPoint GetClientEndpoint() => LocalEndpoint;
         public async void Connect(string _ipAddress, uint _port)
         {
-            if (!client.Client.Connected)
+            try
             {
-                client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                client.Client.Bind(new IPEndPoint(IPAddress.Any, (int)_port));
-
-                Endpoint = new IPEndPoint(IPAddress.Parse(_ipAddress), (int)_port);
-                client.Connect(_ipAddress, (int)_port);
-                await Events.ClientConnect();
+                if (ServerEndpoint == null)
+                {
+                    ServerEndpoint = new(IPAddress.Parse(_ipAddress), (int)_port);
+                    await Events.ClientConnect();
+                }
+                else
+                    Logger.Log(Logger.Loglevel.Warn, "[Client] Client already connected");
             }
-            else
-                Console.WriteLine("[Client] Client already connected");
+            catch(Exception e)
+            {
+                Logger.Log(Logger.Loglevel.Error, $"[Client] Failed to connect to server: {e.Message}");
+            }
         }
-        public void StartReceiving()
+        public async void StartReceiving()
         {
-            if (!client.Client.Connected)
-                Console.WriteLine("[Client] Failed to read data: Client not connected to the server.");
+            if (ServerEndpoint == null)
+                Logger.Log(Logger.Loglevel.Warn, "[Client] Failed to read data: Client not connected to the server.");
             else
             {
                 if (!isReading)
                 {
-                    Console.WriteLine("[Client] Pre read data");
+                    Logger.Log(Logger.Loglevel.Verbose, "[Client] Pre read data");
                     isReading = true;
-                    if (!client.Client.Connected)
-                        Console.WriteLine("[Client] Failed to read data: Client not connected to the server.");
-                    client.BeginReceive(OnDataReceived, null);
+                    if (ServerEndpoint == null)
+                        Logger.Log(Logger.Loglevel.Error, "[Client] Failed to read data: Client not connected to the server.");
+                    await client.ConnectAsync(ServerEndpoint);
+                    ReceiveMessage();
                 }
                 else
-                    Console.WriteLine("[Client] Already reading data.");
+                    Logger.Log(Logger.Loglevel.Warn, "[Client] Already reading data.");
             }
         }
+        private async void ReceiveMessage()
+        {
+            byte[] DataBuffer = new byte[maxBufferSize];
+            EndPoint ServerEP = ServerEndpoint;
+            
+            SocketReceiveMessageFromResult MessageResult = await client.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ServerEP);
+            OnDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
+        }
+
         public void StopReceiving()
         {
             if (isReading)
                 isReading = false;
             else
-                Console.WriteLine("[Client] Not reading data.");
+                Logger.Log(Logger.Loglevel.Warn, "[Client] Not reading data.");
         }
 
         public void SendPacket(UDPPacket _packet)
@@ -91,21 +107,25 @@ namespace NetworkFramework.Framework.UDP
             _packet = new(_packet.ToArray());
             _packet.InsertLength();
 
-            Console.WriteLine($"[Client] Sending packet: {_packet.GetLength()}");
-            client.BeginSend(_packet.ToArray(), _packet.GetLength(), null, null);
+            Logger.Log(Logger.Loglevel.Verbose, $"[Client] Sending packet: {_packet.GetLength()}");
+            client.BeginSendTo(_packet.ToArray(), 0, _packet.GetLength(), SocketFlags.None, ServerEndpoint, null, null);
         }
 
-        private async void OnDataReceived(IAsyncResult ar)
+        private async void OnDataReceived(byte[] _dataReceived, EndPoint _clientEP, int _amountDataReceived)
         {
-            Console.WriteLine("Started receiving");
-            byte[] DataReceived = client.EndReceive(ar, ref Endpoint);
+            if (isReading) // Check if we need to read data or not
+                ReceiveMessage();
+            else
+                return;
 
-            UDPPacket ReceivedPacket = new(DataReceived);
+            Array.Resize(ref _dataReceived, _amountDataReceived);
+
+            UDPPacket ReceivedPacket = new(_dataReceived);
             int PacketSize = ReceivedPacket.ReadInt();
 
-            if (DataReceived.Length - 4!= PacketSize)
+            if (_amountDataReceived - 4 != PacketSize)
             {
-                Console.WriteLine("[Client] Packet size mismatch, dropping...");
+                Logger.Log(Logger.Loglevel.Warn, "[Client] Packet size mismatch, dropping...");
                 return;
             }
 

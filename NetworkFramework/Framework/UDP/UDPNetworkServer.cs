@@ -20,78 +20,76 @@ namespace NetworkFramework.Framework.UDP
         public List<UDPNetworkClient> ConnectedClients = new();
         public UDPServerEventHandler Events;
 
-        private readonly uint serverPort;
-        private readonly UdpClient server;
+        private readonly Socket server;
         private UDPNetworkServer(uint _port)
         {
-            serverPort = _port;
+            try
+            {
+                Events = new UDPServerEventHandler();
 
-            Events = new UDPServerEventHandler();
-            Events.OnClientConnected += async (UDPNetworkClient) => { };
-            Events.OnDataReceived += async (UDPPacket, UDPNetworkClient) => { };
+                server = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp); // New UdpClient instance as server
+                server.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+                server.Bind(new IPEndPoint(IPAddress.Any, (int)_port));
+                Console.WriteLine($"[Server] Server started at {server.LocalEndPoint}");
 
-            server = new UdpClient();
-            server.ExclusiveAddressUse = false;
-            server.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            server.Client.Bind(new IPEndPoint(IPAddress.Parse("0.0.0.0"), (int)_port ));
-
-            Console.WriteLine($"[Server] Server started at {server.Client.LocalEndPoint}");
-
-            server.BeginReceive(OnDataReceived, null);
+                ReceiveMessage();
+            }
+            catch (Exception e)
+            {
+                Logger.Log(Logger.Loglevel.Error, "Failed to start server: ", e.Message);
+            }
         }
+
+        private async void ReceiveMessage()
+        {
+            byte[] DataBuffer = new byte[maxRecieveBuffer];
+            EndPoint ClientEP = new IPEndPoint(IPAddress.Any, 0);
+
+            SocketReceiveMessageFromResult MessageResult = await server.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ClientEP);
+            OnDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
+        }
+
         public static UDPNetworkServer Create(uint _port) => new(_port);
         public void SendPacket(UDPPacket _packet, IPEndPoint _destination)
         {
-            server.BeginSend(_packet.ToArray(), _packet.GetLength(), _destination, OnDataSent, null);
+            _packet = new(_packet.ToArray());
+            _packet.InsertLength();
 
-            Console.WriteLine("[Server] Sent packet");
+            server.SendToAsync(_packet.ToArray(), SocketFlags.None, _destination);
+            Logger.Log(Logger.Loglevel.Verbose, $"[Server] Sent packet: {_packet.GetLength()}");
         }
 
-        // TO DO: SEND PACKET AS TCP AND REQUEST AS UDP
-
-        private void OnDataSent(IAsyncResult ar)
+        private async void OnDataReceived(byte[] _dataReceived, EndPoint _clientEP, int _amountDataReceived)
         {
-            int BytesSent = server.EndSend(ar);
-            Console.WriteLine($"[Server] Bytes sent: {BytesSent}");
-            //server.Close();
-        }
-
-        private async void OnDataReceived(IAsyncResult ar)
-        {
-            IPEndPoint ClientAddress = new(IPAddress.Any, 0);
-            byte[] DataReceived = server.EndReceive(ar, ref ClientAddress);
-            server.BeginReceive(OnDataReceived, null);
-            Console.WriteLine($"[Server] Got data len {DataReceived.Length}");
+            Array.Resize(ref _dataReceived, _amountDataReceived);
+            ReceiveMessage();
+            Logger.Log(Logger.Loglevel.Verbose, $"[Server] Got data len {_amountDataReceived}");
             UDPNetworkClient Client;
-            if (ConnectedClients.Exists(x => x.GetEndpoint().ToString() == ClientAddress.ToString()) == false)
+            if (ConnectedClients.Exists(x => x.GetClientEndpoint().ToString() == _clientEP.ToString()) == false)
             {
-                Console.WriteLine("[Server] Client added to list");
+                Logger.Log(Logger.Loglevel.Verbose, "[Server] Client added to list");
 
-                UdpClient ConClient = new UdpClient();
-                ConClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                ConClient.Client.Bind(new IPEndPoint(IPAddress.Any, 6001 + ConnectedClients.Count + 5));
-
-                Client = new(ConClient);
+                Client = new((IPEndPoint)server.LocalEndPoint, (IPEndPoint)_clientEP);
                 ConnectedClients.Add(Client);
                 await Events.ClientConnect(Client);
             }
             else
             {
-                Client = ConnectedClients.Find(x => x.GetEndpoint().ToString() == ClientAddress.ToString());
-                Console.WriteLine("[Server] Got client from list");
+                Client = ConnectedClients.Find(x => x.GetClientEndpoint().ToString() == _clientEP.ToString());
+                Logger.Log(Logger.Loglevel.Verbose, "[Server] Got client from list");
             }
 
-            UDPPacket ReceivedPacket = new(DataReceived);
+            UDPPacket ReceivedPacket = new(_dataReceived);
             int PacketSize = ReceivedPacket.ReadInt();
 
-            if (DataReceived.Length - 4 != PacketSize)
+            if (_amountDataReceived - 4 != PacketSize)
             {
-                Console.WriteLine("[Server] Packet size mismatch, dropping");
+                Logger.Log(Logger.Loglevel.Warn, "[Server] Packet size mismatch, dropping");
                 return;
             }
 
             await Events.DataReceived(ReceivedPacket, Client);
-            
+
         }
     }
 }
