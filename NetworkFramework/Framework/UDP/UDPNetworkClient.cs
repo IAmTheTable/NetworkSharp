@@ -33,7 +33,6 @@ namespace NetworkFramework.Framework.UDP
             client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
             LocalEndpoint = _localEp ?? new IPEndPoint(IPAddress.Any, 0);
             ServerEndpoint = _serverEp;
-
             Events = new UDPClientEventHandler();
         }
         /// <summary>
@@ -56,17 +55,22 @@ namespace NetworkFramework.Framework.UDP
                 if (ServerEndpoint == null)
                 {
                     ServerEndpoint = new(IPAddress.Parse(_ipAddress), (int)_port);
+                    client.MulticastLoopback = false;
+                    client.Blocking = false;
+                    client.EnableBroadcast = false;
+                    client.DontFragment = true;
+                    await client.ConnectAsync(ServerEndpoint);
                     await Events.ClientConnect();
                 }
                 else
                     Logger.Log(Logger.Loglevel.Warn, "[Client] Client already connected");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger.Log(Logger.Loglevel.Error, $"[Client] Failed to connect to server: {e.Message}");
             }
         }
-        public async void StartReceiving()
+        public void StartReceiving()
         {
             if (ServerEndpoint == null)
                 Logger.Log(Logger.Loglevel.Warn, "[Client] Failed to read data: Client not connected to the server.");
@@ -78,7 +82,6 @@ namespace NetworkFramework.Framework.UDP
                     isReading = true;
                     if (ServerEndpoint == null)
                         Logger.Log(Logger.Loglevel.Error, "[Client] Failed to read data: Client not connected to the server.");
-                    await client.ConnectAsync(ServerEndpoint);
                     ReceiveMessage();
                 }
                 else
@@ -89,7 +92,7 @@ namespace NetworkFramework.Framework.UDP
         {
             byte[] DataBuffer = new byte[maxBufferSize];
             EndPoint ServerEP = ServerEndpoint;
-            
+
             SocketReceiveMessageFromResult MessageResult = await client.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ServerEP);
             OnDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
         }
@@ -102,34 +105,55 @@ namespace NetworkFramework.Framework.UDP
                 Logger.Log(Logger.Loglevel.Warn, "[Client] Not reading data.");
         }
 
-        public void SendPacket(UDPPacket _packet)
+        public async void SendPacket(UDPPacket _packet)
         {
+            Console.WriteLine("Sent packet");
             _packet = new(_packet.ToArray());
             _packet.InsertLength();
 
             Logger.Log(Logger.Loglevel.Verbose, $"[Client] Sending packet: {_packet.GetLength()}");
-            client.BeginSendTo(_packet.ToArray(), 0, _packet.GetLength(), SocketFlags.None, ServerEndpoint, null, null);
+            //client.SendToAsync(_packet.ToArray(),SocketFlags.None, ServerEndpoint);
+            await client.SendAsync(_packet.ToArray(), SocketFlags.None);
         }
 
-        private async void OnDataReceived(byte[] _dataReceived, EndPoint _clientEP, int _amountDataReceived)
+        /// <summary>
+        /// Called when the client receives data.
+        /// </summary>
+        /// <param name="_dataReceived">Bytes received</param>
+        /// <param name="_clientEP">Endpoint of the data source</param>
+        /// <param name="_amountDataReceived">The amount of data received</param>
+        private async void OnDataReceived(byte[] _dataReceived, EndPoint _sourceEP, int _amountDataReceived)
         {
-            if (isReading) // Check if we need to read data or not
-                ReceiveMessage();
-            else
-                return;
+            // Remove 4 because the first 4 bytes are allocated to the packet size, the packet size doesnt take itself into account.
+            _amountDataReceived -= 4;
 
-            Array.Resize(ref _dataReceived, _amountDataReceived);
+            if (_amountDataReceived < 4)
+            {
+                Logger.Log(Logger.Loglevel.Warn, "Data received event called but no data is present...");
+            }
+            if (_sourceEP != ServerEndpoint)
+            {
+                Logger.Log(Logger.Loglevel.Warn, "Got data that isnt from server?");
+                return;
+            }
+
+            Array.Resize(ref _dataReceived, _amountDataReceived + 4);
 
             UDPPacket ReceivedPacket = new(_dataReceived);
             int PacketSize = ReceivedPacket.ReadInt();
 
-            if (_amountDataReceived - 4 != PacketSize)
+            if (_amountDataReceived != PacketSize)
             {
                 Logger.Log(Logger.Loglevel.Warn, "[Client] Packet size mismatch, dropping...");
                 return;
             }
 
             await Events.DataReceived(ReceivedPacket);
+
+            if (isReading) // Check if we need to read data or not
+                ReceiveMessage();
+            else
+                return;
         }
     }
 }

@@ -18,45 +18,50 @@ namespace NetworkFramework
         {
             server = UDPNetworkServer.Create(6000);
 
-            server.Events.OnClientConnected += Events_OnClientConnected;
-            server.Events.OnDataReceived += Events_OnDataReceived;
+            server.Events.OnClientConnected += Server_ClientConnected;
+            server.Events.OnDataReceived += Server_DataReceived;
 
             client = new();
-            client.Events.OnConnectToServer += Events_OnConnectToServer;
-            client.Events.OnDataReceived += Events_OnDataReceived1;
-            client.Connect("127.0.0.1", 6000);
+            client.Events.OnConnectToServer += Client_ConnectToServer;
+            client.Events.OnDataReceived += Client_DataReceived;
 
+            client.Connect("127.0.0.1", 6000);
 
             await Task.Delay(-1);
         }
-
-        private static async Task Events_OnDataReceived1(UDPPacket arg)
+        private static async Task Client_DataReceived(UDPPacket arg)
         {
-            Console.WriteLine($"[Client] Packet: {arg.ReadString()}");
+            Console.WriteLine($"[Client] CPacket: {arg.ReadString()}");
             await Task.Delay(0);
-        }
 
-        private static async Task Events_OnConnectToServer()
+            UDPPacket CPack = new();
+            CPack.WriteString($"I AM A CLIENT. {DateTime.Now.Millisecond}");
+            client.SendPacket(CPack);
+        }
+        private static async Task Client_ConnectToServer()
         {
             Console.WriteLine("[Client] Connected to server");
             await Task.Delay(0);
             client.StartReceiving();
 
             UDPPacket HelloPacket = new();
-            HelloPacket.WriteString("Hello from client");
+            HelloPacket.WriteString("Hello from client XD");
 
             client.SendPacket(HelloPacket);
         }
-
-        private static async Task Events_OnDataReceived(UDPPacket _arg, UDPNetworkClient _client)
+        private static async Task Server_DataReceived(UDPPacket _arg, UDPNetworkClient _client)
         {
             UDPPacket packet = new (_arg.ToArray());
 
-            Console.WriteLine($"[Server] Packet: {packet.ReadString()} New-len: {packet.GetLength() - packet.readPos}");
+            Console.WriteLine($"[Server] Packet: {packet.ReadString()}");
             await Task.Delay(0);
-            server.SendPacket(_arg, _client.GetClientEndpoint());
+
+            UDPPacket skid = new UDPPacket();
+            skid.WriteString($"I AM A SERVER. {DateTime.Now.Millisecond}");
+
+            server.SendPacket(skid, _client.GetClientEndpoint());
         }
-        private static async Task Events_OnClientConnected(UDPNetworkClient _arg)
+        private static async Task Server_ClientConnected(UDPNetworkClient _arg)
         {
             Console.WriteLine($"[Server] Client connected {_arg.GetClientEndpoint()}");
             await Task.Delay(0);

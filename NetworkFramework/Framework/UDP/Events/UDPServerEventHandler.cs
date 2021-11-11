@@ -15,7 +15,7 @@ namespace NetworkFramework.Framework.UDP.Events
         /// </summary>
         public event Func<UDPNetworkClient, Task> OnClientConnected;
         /// <summary>
-        /// Called when the server Received data
+        /// Event called when teh server receives a packet, returns the packet received and the network client that sent that packet.
         /// </summary>
         public event Func<UDPPacket, UDPNetworkClient, Task> OnDataReceived;
         public async Task ClientConnect(UDPNetworkClient _client) => await OnClientConnected(_client);

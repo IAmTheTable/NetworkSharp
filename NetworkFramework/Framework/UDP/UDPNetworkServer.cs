@@ -29,6 +29,10 @@ namespace NetworkFramework.Framework.UDP
 
                 server = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp); // New UdpClient instance as server
                 server.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
+                server.MulticastLoopback = false;
+                server.Blocking = false;
+                server.DontFragment = true;
+                server.EnableBroadcast = false;
                 server.Bind(new IPEndPoint(IPAddress.Any, (int)_port));
                 Console.WriteLine($"[Server] Server started at {server.LocalEndPoint}");
 
