@@ -5,19 +5,22 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using NetworkFramework.Framework.TCP.Events;
-namespace NetworkFramework.Framework.TCP
+namespace NetworkSharp.Framework.TCP
 {
     public class TCPNetworkServer
     {
         /// <summary>
+        /// Fired when a client is connected to the TCP server.
+        /// </summary>
+        public event Func<TCPNetworkClient, Task> OnClientConnected;
+        /// <summary>
+        /// Fired when a client sends data to the server.
+        /// </summary>
+        public event Func<TCPPacket, Task> OnDataReceived;
+        /// <summary>
         /// Max amount of bytes that can be sent/Received in a single buffer.
         /// </summary>
         public int maxRecieveBuffer = 4096;
-        /// <summary>
-        /// The class for handling events.
-        /// </summary>
-        public readonly TCPServerEventHandler Events;
         /// <summary>
         /// A list of clients that are currently connected to the server.
         /// </summary>
@@ -35,26 +38,25 @@ namespace NetworkFramework.Framework.TCP
             serverPort = _port;
 
             // Init the event handler
-            Events = new TCPServerEventHandler();
-            Events.OnClientConnected += TcpServerEventHandler_OnClientConnected;
+            OnClientConnected += TcpServerEventHandler_OnClientConnected;
 
             new Thread(() =>
             {
                 try
                 {
-                    Console.WriteLine("[Server] Binding port...");
+                    Logger.Log(Logger.Loglevel.Verbose, "[Server] Binding port...");
                     tcpListener = new(IPAddress.Any, serverPort);
-                    Console.WriteLine("[Server] Bound port.");
+                    Logger.Log(Logger.Loglevel.Verbose, "[Server] Bound port.");
 
-                    Console.WriteLine("[Server] Starting server...");
+                    Logger.Log(Logger.Loglevel.Verbose, "[Server] Starting server...");
                     tcpListener.Start();
 
-                    Console.WriteLine($"[Server] Server started at {tcpListener.LocalEndpoint}.");
+                    Logger.Log(Logger.Loglevel.Verbose, $"[Server] Server started at {tcpListener.LocalEndpoint}.");
                 }
                 catch (SocketException e)
                 {
                     // Catch any exceptions and inform the user.
-                    Console.WriteLine($"[Server] There was an error while starting server at {tcpListener.LocalEndpoint}.\n-------------------------\n{e.Message}\n-------------------------");
+                    Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while starting server at {tcpListener.LocalEndpoint}.\n{e.Message}");
                 }
                 
                 tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
@@ -71,11 +73,11 @@ namespace NetworkFramework.Framework.TCP
                 TcpClient ConnectedClient = tcpListener.EndAcceptTcpClient(ar);
                 tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
 
-                await Events.ClientConnect(new TCPNetworkClient(ConnectedClient));
+                await OnClientConnected(new TCPNetworkClient(ConnectedClient));
             }
             catch (Exception e)
             {
-                Console.WriteLine($"[Server] There was an error while a client tried connecting. \n-------------------------\n{e.Message}\n-------------------------");
+                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while a client tried connecting. \n-------------------------\n{e.Message}\n-------------------------");
             }
         }
 
@@ -87,7 +89,7 @@ namespace NetworkFramework.Framework.TCP
             await Task.Delay(0);
 
             // Handle the events, even though its on the client; the server will still handle it and it wont persist on both ends.
-            _client.Events.OnDataReceived += TcpClientEventHandler_OnDataReceived;
+            _client.OnDataReceived += TcpClientEventHandler_OnDataReceived;
             _client.StartRecieving();
         }
         /// <summary>
@@ -95,6 +97,6 @@ namespace NetworkFramework.Framework.TCP
         /// </summary>
         /// <param name="arg">The data that is Received</param>
         /// <returns>None</returns>
-        private async Task TcpClientEventHandler_OnDataReceived(TCPPacket arg) => await Events.DataReceived(arg);
+        private async Task TcpClientEventHandler_OnDataReceived(TCPPacket arg) => await OnDataReceived(arg);
     }
 }

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NetworkFramework.Framework
+namespace NetworkSharp.Framework
 {
     public static class Logger
     {
@@ -14,8 +14,12 @@ namespace NetworkFramework.Framework
             Error,
             Warn,
         }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2211:Non-constant fields should not be visible", Justification = "<Pending>")]
         public static bool VerboseLogging = false;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2211:Non-constant fields should not be visible", Justification = "<Pending>")]
         public static bool WarningLogging = true;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2211:Non-constant fields should not be visible", Justification = "<Pending>")]
         public static bool ErrorLogging = true;
         public static void Log(Loglevel _level, params object[] _data)
         {

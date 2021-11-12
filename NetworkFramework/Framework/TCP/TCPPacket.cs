@@ -8,7 +8,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
-namespace NetworkFramework.Framework.TCP
+namespace NetworkSharp.Framework.TCP
 {
     public class TCPPacket
     {

@@ -1,27 +1,42 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-
 using System.Net;
 using System.Net.Sockets;
-
-
-using NetworkFramework.Framework.UDP.Events;
 using System.Threading.Tasks;
 
-namespace NetworkFramework.Framework.UDP
+namespace NetworkSharp.Framework.UDP
 {
+    /// <summary>
+    /// An easy to use UDP Client for sending and receiving data.
+    /// </summary>
     public class UDPNetworkClient
     {
-        public readonly int maxBufferSize = 4096;
-        public readonly UDPClientEventHandler Events;
-        public readonly Socket client;
-
-        private IPEndPoint ServerEndpoint;
-        private readonly IPEndPoint LocalEndpoint;
-
+        /// <summary>
+        /// Called when the client is connected to the server.
+        /// </summary>
+        public event Func<Task> OnConnectToServer;
+        /// <summary>
+        /// Called when the client Received data.
+        /// </summary>
+        public event Func<UDPPacket, Task> OnDataReceived;
+        /// <summary>
+        /// The max amount of bytes the client can receive/send at once.
+        /// </summary>
+        public int MaxBufferSize = 4096;
+        /// <summary>
+        /// The endpoint of the server.
+        /// </summary>
+        public IPEndPoint ServerEndpoint { get; private set; }
+        /// <summary>
+        /// The endpoint of the client
+        /// </summary>
+        public IPEndPoint LocalEndpoint { get; private set; }
+        /// <summary>
+        /// The socket used
+        /// </summary>
+        private readonly Socket client;
+        /// <summary>
+        /// Is the client already reading data from the network?
+        /// </summary>
         private bool isReading;
         /// <summary>
         /// Create a new UDP Client instance(used by the server).
@@ -33,21 +48,22 @@ namespace NetworkFramework.Framework.UDP
             client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
             LocalEndpoint = _localEp ?? new IPEndPoint(IPAddress.Any, 0);
             ServerEndpoint = _serverEp;
-            Events = new UDPClientEventHandler();
         }
+
         /// <summary>
         /// Create a new UDP Client instance.
         /// </summary>
-        /// <param name="_port">The port the client binds to(not server port).</param>
         public UDPNetworkClient()
         {
             client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
-
-            Events = new UDPClientEventHandler();
         }
-        public IPEndPoint GetServerEndpoint() => ServerEndpoint;
-        public IPEndPoint GetClientEndpoint() => LocalEndpoint;
+
+        /// <summary>
+        /// Connect to a UDP server
+        /// </summary>
+        /// <param name="_ipAddress">IP of the server</param>
+        /// <param name="_port">Port of the server</param>
         public async void Connect(string _ipAddress, uint _port)
         {
             try
@@ -60,7 +76,7 @@ namespace NetworkFramework.Framework.UDP
                     client.EnableBroadcast = false;
                     client.DontFragment = true;
                     await client.ConnectAsync(ServerEndpoint);
-                    await Events.ClientConnect();
+                    await OnConnectToServer();
                 }
                 else
                     Logger.Log(Logger.Loglevel.Warn, "[Client] Client already connected");
@@ -90,11 +106,11 @@ namespace NetworkFramework.Framework.UDP
         }
         private async void ReceiveMessage()
         {
-            byte[] DataBuffer = new byte[maxBufferSize];
+            byte[] DataBuffer = new byte[MaxBufferSize];
             EndPoint ServerEP = ServerEndpoint;
 
             SocketReceiveMessageFromResult MessageResult = await client.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ServerEP);
-            OnDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
+            OnClientDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
         }
 
         public void StopReceiving()
@@ -122,7 +138,7 @@ namespace NetworkFramework.Framework.UDP
         /// <param name="_dataReceived">Bytes received</param>
         /// <param name="_clientEP">Endpoint of the data source</param>
         /// <param name="_amountDataReceived">The amount of data received</param>
-        private async void OnDataReceived(byte[] _dataReceived, EndPoint _sourceEP, int _amountDataReceived)
+        private async void OnClientDataReceived(byte[] _dataReceived, EndPoint _sourceEP, int _amountDataReceived)
         {
             // Remove 4 because the first 4 bytes are allocated to the packet size, the packet size doesnt take itself into account.
             _amountDataReceived -= 4;
@@ -148,7 +164,7 @@ namespace NetworkFramework.Framework.UDP
                 return;
             }
 
-            await Events.DataReceived(ReceivedPacket);
+            await OnDataReceived(ReceivedPacket);
 
             if (isReading) // Check if we need to read data or not
                 ReceiveMessage();
