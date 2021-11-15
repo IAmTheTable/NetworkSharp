@@ -55,6 +55,8 @@ namespace NetworkSharp.Framework.UDP
         /// </summary>
         public UDPNetworkClient()
         {
+            OnConnectToServer += () => new Task(() => { });
+            OnDataReceived += (UDPPacket) => new Task(() => { });
             client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
         }
