@@ -132,12 +132,16 @@ namespace NetworkSharp.Framework.TCP
         }
         #endregion
 
-        public byte[] ToArray()
-        {
-            // insert the packet length at the beginning
-            buffer.InsertRange(0, BitConverter.GetBytes(buffer.Count + 4));
-            return buffer.ToArray();
-        }
+        /// <summary>
+        /// Write the length of the packet at the beginning, (You dont need to worry about this)
+        /// </summary>
+        public void WriteLength() => buffer.InsertRange(0, BitConverter.GetBytes(buffer.Count));
+
+        /// <summary>
+        /// Conver the packet into an array of bytes.
+        /// </summary>
+        /// <returns></returns>
+        public byte[] ToArray() => buffer.ToArray();
         public int GetLength() => buffer.Count;
     }
 }

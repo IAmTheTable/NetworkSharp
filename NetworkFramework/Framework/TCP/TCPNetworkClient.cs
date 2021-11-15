@@ -10,11 +10,11 @@ namespace NetworkSharp.Framework.TCP
         /// <summary>
         /// Called when the client Receives data from the server.
         /// </summary>
-        public event Func<TCPPacket, Task> OnDataReceived;
+        public event Action<TCPPacket> OnDataReceived;
         /// <summary>
         /// Called when the client connects to the server.
         /// </summary>
-        public event Func<EndPoint, Task> OnConnectToServer;
+        public event Action<EndPoint> OnConnectToServer;
         /// <summary>
         /// The max amount of bytes the client can receive at once.
         /// </summary>
@@ -54,6 +54,14 @@ namespace NetworkSharp.Framework.TCP
             dataBuffer = new byte[MaxBufferSize];
             clientEndpoint = new IPEndPoint(IPAddress.Any, 0);
         }
+        ~TCPNetworkClient()
+        {
+            Logger.Log(Logger.Loglevel.Verbose, "[Client] Disposed");
+            client.Close();
+            ServerEndpoint = null;
+            stream = null;
+            client.Dispose();
+        }
 
         /// <summary>
         /// Connect to a server with a specified IP and Port.
@@ -74,11 +82,11 @@ namespace NetworkSharp.Framework.TCP
         /// Called when the client is connected to the server.
         /// </summary>
         /// <param name="ar"></param>
-        private async void OnConnectedToServer(IAsyncResult ar)
+        private void OnConnectedToServer(IAsyncResult ar)
         {
             stream = client.GetStream();
 
-            await OnConnectToServer(ServerEndpoint);
+            OnConnectToServer(ServerEndpoint);
         }
 
         /// <summary>
@@ -103,6 +111,12 @@ namespace NetworkSharp.Framework.TCP
         }
 
         /// <summary>
+        /// Gets the raw TCPClient class used.
+        /// </summary>
+        /// <returns>The tcp client used.</returns>
+        public TcpClient GetClient() => client;
+
+        /// <summary>
         /// Stop reading data from the server.
         /// </summary>
         public void StopRecieving()
@@ -119,6 +133,7 @@ namespace NetworkSharp.Framework.TCP
         /// <param name="_packet">The packet you wish to send.</param>
         public void SendPacket(TCPPacket _packet)
         {
+            _packet.WriteLength();
             try
             {
                 if (client.Connected) // check if we're connected to the server
@@ -130,7 +145,7 @@ namespace NetworkSharp.Framework.TCP
                     Console.WriteLine("[Client] Not connected to the server.");
 
             }
-            catch (Exception e) { Logger.Log(Logger.Loglevel.Error, $"There was an error while trying to send a TCP Packet,\n {e.Message}"); }
+            catch (Exception e) { Logger.Log(Logger.Loglevel.Error, $"[Client] There was an error while trying to send a TCP Packet,\n {e.Message}"); }
         }
         
         /// <summary>
@@ -143,7 +158,7 @@ namespace NetworkSharp.Framework.TCP
         /// Called when the client receives data.
         /// </summary>
         /// <param name="ar"></param>
-        private async void OnTcpDataReceived(IAsyncResult ar)
+        private void OnTcpDataReceived(IAsyncResult ar)
         {
             // Get the bytes that we read
             int BytesRead = client.GetStream().EndRead(ar);
@@ -157,14 +172,14 @@ namespace NetworkSharp.Framework.TCP
             int PacketSize = RecivedPacket.ReadInt(); // get the packet size.
 
             // Check if the packet size matches with the amount of data we got
-            if (BytesRead != PacketSize)
+            if (BytesRead - 4 != PacketSize)
             {
                 Console.WriteLine("[Client] Packet size mismatch, dropping...");
                 return;
             }
 
             // Fire the event, for handlers to handle the data.
-            await OnDataReceived(RecivedPacket);
+            OnDataReceived(RecivedPacket);
         }
     }
 }
