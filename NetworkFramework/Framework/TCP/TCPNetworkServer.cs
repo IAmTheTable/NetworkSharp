@@ -18,13 +18,36 @@ namespace NetworkSharp.Framework.TCP
         /// </summary>
         public event Action<TCPPacket> OnDataReceived;
         /// <summary>
+        /// Fired when a client disconnects from the server.
+        /// </summary>
+        public event Action<int> OnClientDisconnected;
+        /// <summary>
         /// Max amount of bytes that can be sent/Received in a single buffer.
         /// </summary>
         public int maxRecieveBuffer = 4096;
         /// <summary>
         /// A list of clients that are currently connected to the server.
         /// </summary>
-        public Dictionary<int, TCPNetworkClient> ConnectedClients = new();
+        public Dictionary<int, TCPNetworkClient> ConnectedClients
+        {
+            get { return _ConnectedClients; }
+            set { OnClientsChanged(value); }
+        }
+
+        private Dictionary<int, TCPNetworkClient> _ConnectedClients;
+
+        private void OnClientsChanged(Dictionary<int, TCPNetworkClient> _newValue)
+        {
+            var CCCopy = ConnectedClients;
+
+            for (int i = 0; i < _newValue.Keys.Count; i++)
+            {
+                if (CCCopy.ContainsKey(i))
+                    CCCopy.Remove(i);
+            }
+
+            Console.WriteLine(_newValue.Keys.Count > ConnectedClients.Count ? "Added" : "Removed");
+        }
 
         private TcpListener tcpListener;
         private readonly int serverPort;
@@ -35,6 +58,8 @@ namespace NetworkSharp.Framework.TCP
         /// <returns></returns>
         private TCPNetworkServer(int _port)
         {
+            _ConnectedClients = new();
+            ConnectedClients = _ConnectedClients;
             serverPort = _port;
             new Thread(() =>
             {
@@ -92,7 +117,7 @@ namespace NetworkSharp.Framework.TCP
         /// <param name="_client">The client instance that is used.</param>
         private void TcpServerEventHandler_OnClientConnected(TCPNetworkClient _client)
         {
-            ConnectedClients.Add(ConnectedClients.Count, _client);
+            _ConnectedClients.Add(_ConnectedClients.Count, _client);
 
             // Handle the events, even though its on the client; the server will still handle it and it wont persist on both ends.
             _client.OnDataReceived += TcpClientEventHandler_OnDataReceived;
@@ -115,13 +140,13 @@ namespace NetworkSharp.Framework.TCP
         {
             try
             {
-                if (!ConnectedClients.ContainsKey(_clientIdx))
+                if (!_ConnectedClients.ContainsKey(_clientIdx))
                 {
                     Logger.Log(Logger.Loglevel.Error, $"Client id {_clientIdx} not connected or not found.");
                     return;
                 }
 
-                TCPNetworkClient TargetClient = ConnectedClients[_clientIdx];
+                TCPNetworkClient TargetClient = _ConnectedClients[_clientIdx];
 
                 if (TargetClient.GetClient().Connected && TargetClient.GetClient().GetStream().CanWrite)
                     TargetClient.SendPacket(_packet);
@@ -141,7 +166,7 @@ namespace NetworkSharp.Framework.TCP
         {
             try
             {
-                if(_client.GetClient().Connected)
+                if (_client.GetClient().Connected)
                 {
                     _client.SendPacket(_packet);
                 }
@@ -150,7 +175,7 @@ namespace NetworkSharp.Framework.TCP
                     Logger.Log(Logger.Loglevel.Error, "There was an error while trying to send a packet to a client.\nClient not connected.");
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Logger.Log(Logger.Loglevel.Error, $"There was an error while trying to send a packet to a client.\n{e.Message}");
             }
