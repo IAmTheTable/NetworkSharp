@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Net;
+using System.Linq;
+using System.Timers;
 using System.Threading;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net.NetworkInformation;
 
 namespace NetworkSharp.Framework.TCP
 {
@@ -28,108 +31,50 @@ namespace NetworkSharp.Framework.TCP
         /// <summary>
         /// A list of clients that are currently connected to the server.
         /// </summary>
-        public Dictionary<int, TCPNetworkClient> ConnectedClients
-        {
-            get { return _ConnectedClients; }
-            set { OnClientsChanged(value); }
-        }
-
-        private Dictionary<int, TCPNetworkClient> _ConnectedClients;
-
-        private void OnClientsChanged(Dictionary<int, TCPNetworkClient> _newValue)
-        {
-            var CCCopy = ConnectedClients;
-
-            for (int i = 0; i < _newValue.Keys.Count; i++)
-            {
-                if (CCCopy.ContainsKey(i))
-                    CCCopy.Remove(i);
-            }
-
-            Console.WriteLine(_newValue.Keys.Count > ConnectedClients.Count ? "Added" : "Removed");
-        }
+        public Dictionary<int, TCPNetworkClient> ConnectedClients;
 
         private TcpListener tcpListener;
         private readonly int serverPort;
-        /// <summary>
-        /// Initializes a new instance of a server to use.
-        /// </summary>
-        /// <param name="_port">Port to bind to</param>
-        /// <returns></returns>
-        private TCPNetworkServer(int _port)
-        {
-            _ConnectedClients = new();
-            ConnectedClients = _ConnectedClients;
-            serverPort = _port;
-            new Thread(() =>
-            {
-                try
-                {
-                    // Debugging
-                    Logger.Log(Logger.Loglevel.Verbose, "[Server] Binding port...");
-                    tcpListener = new(IPAddress.Any, serverPort); // Create the server instance
-                    Logger.Log(Logger.Loglevel.Verbose, "[Server] Bound port.");
-                    Logger.Log(Logger.Loglevel.Verbose, "[Server] Starting server...");
-                    // Init the event handler
-                    OnClientConnected += TcpServerEventHandler_OnClientConnected;
-                    // start the server
-                    tcpListener.Start();
-                    Logger.Log(Logger.Loglevel.Verbose, $"[Server] Server started at {tcpListener.LocalEndpoint}.");
-                }
-                catch (SocketException e)
-                {
-                    // Catch any exceptions and inform the user.
-                    Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while starting server at {tcpListener.LocalEndpoint}.\n{e.Message}");
-                }
-
-                tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
-                Thread.Sleep(-1);
-
-            }).Start();
-        }
-
-        private void TCPClientAcceptCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Get the connected client
-                TcpClient ConnectedClient = tcpListener.EndAcceptTcpClient(ar);
-                tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null); // Start accepting clients
-                // Fire the client connected event
-                OnClientConnected(new TCPNetworkClient(ConnectedClient));
-            }
-            catch (Exception e)
-            {
-                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while a client tried connecting. \n-------------------------\n{e.Message}\n-------------------------");
-            }
-        }
 
         /// <summary>
         /// Create a new TCPServer and start listening on the specified port.
         /// </summary>
         /// <param name="_port">The port you wish to listen on.</param>
         /// <returns>The TCPNetworkServer instance.</returns>
-        public static TCPNetworkServer Create(int _port) => new(_port);
-
-        /// <summary>
-        /// Called when a client is connected to the server.
-        /// </summary>
-        /// <param name="_client">The client instance that is used.</param>
-        private void TcpServerEventHandler_OnClientConnected(TCPNetworkClient _client)
+        public TCPNetworkServer(int _port)
         {
-            _ConnectedClients.Add(_ConnectedClients.Count, _client);
+            ConnectedClients = new();
+            serverPort = _port;
 
-            // Handle the events, even though its on the client; the server will still handle it and it wont persist on both ends.
-            _client.OnDataReceived += TcpClientEventHandler_OnDataReceived;
-            _client.StartRecieving();
+            try
+            {
+                // Debugging
+                Logger.Log(Logger.Loglevel.Verbose, "[Server] Binding port...");
+                tcpListener = new(IPAddress.Any, serverPort); // Create the server instance
+                Logger.Log(Logger.Loglevel.Verbose, "[Server] Bound port.");
+            }
+            catch (SocketException e)
+            {
+                // Catch any exceptions and inform the user.
+                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while starting server at {tcpListener.LocalEndpoint}.\n{e.Message}");
+            }
         }
 
         /// <summary>
-        /// When the server recieves data.
+        /// Begin listening for connections on port you specified.
         /// </summary>
-        /// <param name="arg">The data that is Received</param>
-        /// <returns>None</returns>
-        private void TcpClientEventHandler_OnDataReceived(TCPPacket arg) => OnDataReceived(arg);
+        public void Listen()
+        {
+            new Thread(() =>
+            {
+                Logger.Log(Logger.Loglevel.Verbose, "[Server] Starting server...");
+                // start the server
+                tcpListener.Start();
+                Logger.Log(Logger.Loglevel.Verbose, $"[Server] Server started at {tcpListener.LocalEndpoint}.");
+                tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null);
+                Thread.Sleep(-1);
+            }).Start();
+        }
 
         /// <summary>
         /// Send a packet to the target client.
@@ -140,13 +85,13 @@ namespace NetworkSharp.Framework.TCP
         {
             try
             {
-                if (!_ConnectedClients.ContainsKey(_clientIdx))
+                if (!ConnectedClients.ContainsKey(_clientIdx))
                 {
                     Logger.Log(Logger.Loglevel.Error, $"Client id {_clientIdx} not connected or not found.");
                     return;
                 }
 
-                TCPNetworkClient TargetClient = _ConnectedClients[_clientIdx];
+                ConnectedClients.TryGetValue(_clientIdx, out TCPNetworkClient TargetClient);
 
                 if (TargetClient.GetClient().Connected && TargetClient.GetClient().GetStream().CanWrite)
                     TargetClient.SendPacket(_packet);
@@ -179,6 +124,63 @@ namespace NetworkSharp.Framework.TCP
             {
                 Logger.Log(Logger.Loglevel.Error, $"There was an error while trying to send a packet to a client.\n{e.Message}");
             }
+        }
+        private void TCPClientAcceptCallback(IAsyncResult ar)
+        {
+            try
+            {
+                // Get the connected client
+                TcpClient ConnectedClient = tcpListener.EndAcceptTcpClient(ar);
+                tcpListener.BeginAcceptTcpClient(TCPClientAcceptCallback, null); // Start accepting clients
+                var NewClient = new TCPNetworkClient(ConnectedClient);
+                // Handle our call then send the event out 
+                TcpServerEventHandler_OnClientConnected(NewClient);
+                OnClientConnected(NewClient);
+            }
+            catch (Exception e)
+            {
+                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while a client tried connecting. \n-------------------------\n{e.Message}\n-------------------------");
+            }
+        }
+
+        /// <summary>
+        /// Called when a client is connected to the server.
+        /// </summary>
+        /// <param name="_client">The client instance that is used.</param>
+        private void TcpServerEventHandler_OnClientConnected(TCPNetworkClient _client)
+        {
+            int ClientIndex = ConnectedClients.Count;
+            ConnectedClients.Add(ClientIndex, _client);
+
+            new Thread(() =>
+            {
+                TcpClient ConnectedClientBase = _client.GetClient();
+                // while the connection is established
+                while (GetState(ConnectedClientBase) == TcpState.Established)
+                    Thread.Sleep(0);
+
+                // Remove the client and call the function
+                ConnectedClients.Remove(ClientIndex);
+                OnClientDisconnected(ClientIndex);
+            }).Start();
+
+            // Handle the events, even though its on the client; the server will still handle it and it wont persist on both ends.
+            _client.OnDataReceived += (arg) => OnDataReceived(arg);
+            _client.StartRecieving();
+        }
+
+        //https://stackoverflow.com/questions/1387459/how-to-check-if-tcpclient-connection-is-closed
+        /// <summary>
+        /// Get a TCP Client state
+        /// </summary>
+        /// <param name="tcpClient">The client to get the state from</param>
+        /// <returns>TcpState of the client.</returns>
+        private TcpState GetState(TcpClient tcpClient)
+        {
+            var foo = IPGlobalProperties.GetIPGlobalProperties()
+              .GetActiveTcpConnections()
+              .SingleOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
+            return foo != null ? foo.State : TcpState.Unknown;
         }
     }
 }

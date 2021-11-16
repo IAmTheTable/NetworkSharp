@@ -27,7 +27,13 @@ namespace NetworkSharp.Framework.UDP
         public List<UDPNetworkClient> ConnectedClients = new();
 
         private readonly Socket server;
-        private UDPNetworkServer(int _port)
+
+        /// <summary>
+        /// Create and start a new UDP server.
+        /// </summary>
+        /// <param name="_port">The port on the network you wish to listen on.</param>
+        /// <returns>The new instance of the UDP Server.</returns>
+        public UDPNetworkServer(int _port)
         {
             if (_port < 1 && _port > short.MaxValue)
                 throw new Exception($"Value of '_port' cannot be greater than {short.MaxValue} and not less than {1}");
@@ -68,12 +74,6 @@ namespace NetworkSharp.Framework.UDP
             SocketReceiveMessageFromResult MessageResult = await server.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ClientEP);
             OnServerDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes); // Handle the message
         }
-        /// <summary>
-        /// Create and start a new UDP server.
-        /// </summary>
-        /// <param name="_port">The port on the network you wish to listen on.</param>
-        /// <returns>The new instance of the UDP Server.</returns>
-        public static UDPNetworkServer Create(int _port) => new(_port);
 
         /// <summary>
         /// Send a packet to a client.
