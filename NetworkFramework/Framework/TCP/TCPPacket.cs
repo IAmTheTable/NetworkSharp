@@ -42,6 +42,7 @@ namespace NetworkSharp.Framework.TCP
         {
             buffer.AddRange(BitConverter.GetBytes(_data));
         }
+        public void WriteBytes(byte[] _data) => buffer.AddRange(_data);
         #endregion
 
         #region Read Functions

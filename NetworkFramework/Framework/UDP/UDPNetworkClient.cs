@@ -86,6 +86,9 @@ namespace NetworkSharp.Framework.UDP
                 Logger.Log(Logger.Loglevel.Error, $"[Client] Failed to connect to server: {e.Message}");
             }
         }
+        /// <summary>
+        /// Start receiving data from the server.
+        /// </summary>
         public void StartReceiving()
         {
             if (ServerEndpoint == null)
@@ -104,15 +107,9 @@ namespace NetworkSharp.Framework.UDP
                     Logger.Log(Logger.Loglevel.Warn, "[Client] Already reading data.");
             }
         }
-        private async void ReceiveMessage()
-        {
-            byte[] DataBuffer = new byte[MaxBufferSize];
-            EndPoint ServerEP = ServerEndpoint;
-
-            SocketReceiveMessageFromResult MessageResult = await client.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ServerEP);
-            OnClientDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
-        }
-
+        /// <summary>
+        /// Stop receiving data from the server.
+        /// </summary>
         public void StopReceiving()
         {
             if (isReading)
@@ -120,7 +117,10 @@ namespace NetworkSharp.Framework.UDP
             else
                 Logger.Log(Logger.Loglevel.Warn, "[Client] Not reading data.");
         }
-
+        /// <summary>
+        /// Send a packet to the server.
+        /// </summary>
+        /// <param name="_packet">The packet of data you wish to send.</param>
         public async void SendPacket(UDPPacket _packet)
         {
             Console.WriteLine("Sent packet");
@@ -130,6 +130,23 @@ namespace NetworkSharp.Framework.UDP
             Logger.Log(Logger.Loglevel.Verbose, $"[Client] Sending packet: {_packet.GetLength()}");
             //client.SendToAsync(_packet.ToArray(),SocketFlags.None, ServerEndpoint);
             await client.SendAsync(_packet.ToArray(), SocketFlags.None);
+        }
+
+        /// <summary>
+        /// Get the network socket object used.
+        /// </summary>
+        /// <returns>The socket this client uses.</returns>
+        public Socket GetClient() => client;
+        /// <summary>
+        /// Locally get the message.
+        /// </summary>
+        private async void ReceiveMessage()
+        {
+            byte[] DataBuffer = new byte[MaxBufferSize];
+            EndPoint ServerEP = ServerEndpoint;
+
+            SocketReceiveMessageFromResult MessageResult = await client.ReceiveMessageFromAsync(DataBuffer, SocketFlags.None, ServerEP);
+            OnClientDataReceived(DataBuffer, MessageResult.RemoteEndPoint, MessageResult.ReceivedBytes);
         }
 
         /// <summary>

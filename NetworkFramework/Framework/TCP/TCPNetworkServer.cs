@@ -22,6 +22,7 @@ namespace NetworkSharp.Framework.TCP
         public event Action<TCPPacket> OnDataReceived;
         /// <summary>
         /// Fired when a client disconnects from the server.
+        /// The number returned is the client id that disconnected.
         /// </summary>
         public event Action<int> OnClientDisconnected;
         /// <summary>
@@ -31,9 +32,9 @@ namespace NetworkSharp.Framework.TCP
         /// <summary>
         /// A list of clients that are currently connected to the server.
         /// </summary>
-        public Dictionary<int, TCPNetworkClient> ConnectedClients;
+        public Dictionary<int, TCPNetworkClient> ConnectedClients { get; private set; }
 
-        private TcpListener tcpListener;
+        private readonly TcpListener tcpListener;
         private readonly int serverPort;
 
         /// <summary>
@@ -45,7 +46,6 @@ namespace NetworkSharp.Framework.TCP
         {
             ConnectedClients = new();
             serverPort = _port;
-
             try
             {
                 // Debugging
@@ -87,7 +87,7 @@ namespace NetworkSharp.Framework.TCP
             {
                 if (!ConnectedClients.ContainsKey(_clientIdx))
                 {
-                    Logger.Log(Logger.Loglevel.Error, $"Client id {_clientIdx} not connected or not found.");
+                    Logger.Log(Logger.Loglevel.Error, $"[Server] Client id {_clientIdx} not connected or not found.");
                     return;
                 }
 
@@ -98,7 +98,7 @@ namespace NetworkSharp.Framework.TCP
             }
             catch (Exception e)
             {
-                Logger.Log(Logger.Loglevel.Error, $"There was an error while trying to send a packet to a client.\n{e.Message}");
+                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while trying to send a packet to a client.\n{e.Message}");
             }
         }
 
@@ -117,12 +117,12 @@ namespace NetworkSharp.Framework.TCP
                 }
                 else
                 {
-                    Logger.Log(Logger.Loglevel.Error, "There was an error while trying to send a packet to a client.\nClient not connected.");
+                    Logger.Log(Logger.Loglevel.Error, "[Server] There was an error while trying to send a packet to a client.\nClient not connected.");
                 }
             }
             catch (Exception e)
             {
-                Logger.Log(Logger.Loglevel.Error, $"There was an error while trying to send a packet to a client.\n{e.Message}");
+                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while trying to send a packet to a client.\n{e.Message}");
             }
         }
         private void TCPClientAcceptCallback(IAsyncResult ar)
@@ -139,7 +139,7 @@ namespace NetworkSharp.Framework.TCP
             }
             catch (Exception e)
             {
-                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while a client tried connecting. \n-------------------------\n{e.Message}\n-------------------------");
+                Logger.Log(Logger.Loglevel.Error, $"[Server] There was an error while a client tried connecting.\n{e.Message}");
             }
         }
 
@@ -165,17 +165,17 @@ namespace NetworkSharp.Framework.TCP
             }).Start();
 
             // Handle the events, even though its on the client; the server will still handle it and it wont persist on both ends.
-            _client.OnDataReceived += (arg) => OnDataReceived(arg);
+            _client.OnDataReceived += (_packet) => OnDataReceived(_packet);
             _client.StartRecieving();
         }
 
         //https://stackoverflow.com/questions/1387459/how-to-check-if-tcpclient-connection-is-closed
         /// <summary>
-        /// Get a TCP Client state
+        /// Get a TCPState from a TcpClient.
         /// </summary>
-        /// <param name="tcpClient">The client to get the state from</param>
+        /// <param name="tcpClient">The client to get the state from.</param>
         /// <returns>TcpState of the client.</returns>
-        private TcpState GetState(TcpClient tcpClient)
+        private static TcpState GetState(TcpClient tcpClient)
         {
             var foo = IPGlobalProperties.GetIPGlobalProperties()
               .GetActiveTcpConnections()

@@ -147,7 +147,7 @@ namespace NetworkSharp.Framework.TCP
             }
             catch (Exception e) { Logger.Log(Logger.Loglevel.Error, $"[Client] There was an error while trying to send a TCP Packet,\n {e.Message}"); }
         }
-        
+
         /// <summary>
         /// Called when the client finished writing to the stream.
         /// </summary>
@@ -163,16 +163,35 @@ namespace NetworkSharp.Framework.TCP
             // Get the bytes that we read
             int BytesRead = client.GetStream().EndRead(ar);
 
-            // Check if we need to read data
-            if (!isReading)
-                client.GetStream().BeginRead(dataBuffer, 0, MaxBufferSize, OnTcpDataReceived, null);
 
             // Create the packet instance from the data we got
             TCPPacket RecivedPacket = new(dataBuffer);
             int PacketSize = RecivedPacket.ReadInt(); // get the packet size.
 
             // Check if the packet size matches with the amount of data we got
-            if (BytesRead - 4 != PacketSize)
+
+            // if the amount of bytes we received is less than the packet size, we need to keep listening.
+            if (BytesRead < PacketSize)
+            {
+                // still reading data
+                while (BytesRead < PacketSize)
+                {
+                    // Store the data temporarily
+                    byte[] TempBuffer = new byte[PacketSize - BytesRead];
+                    stream.BeginRead(TempBuffer, 0, TempBuffer.Length,
+                    (_ar) =>
+                    {
+                        // The amount of bytes read.
+                        int AmountRead = stream.EndRead(_ar);
+                        BytesRead += AmountRead;//increase the packet size
+                    }, null);
+
+                    RecivedPacket.WriteBytes(TempBuffer);
+                    TempBuffer = null; // flush the bytes, because it would cause memory leak.
+                }
+            }
+
+            if (BytesRead - 4 > PacketSize)
             {
                 Console.WriteLine("[Client] Packet size mismatch, dropping...");
                 return;
@@ -180,6 +199,10 @@ namespace NetworkSharp.Framework.TCP
 
             // Fire the event, for handlers to handle the data.
             OnDataReceived(RecivedPacket);
+
+            // Check if we need to read data
+            if (!isReading)
+                client.GetStream().BeginRead(dataBuffer, 0, MaxBufferSize, OnTcpDataReceived, null);
         }
     }
 }
