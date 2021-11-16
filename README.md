@@ -8,7 +8,7 @@ I am very open to suggestions and improvements. (Thank You)
 
 
 # How to use
-Here is an example Program.cs to help you start off.
+Heres an example of how to use TCP Server/Client in a single project!
 
 ```cs
 using System;
