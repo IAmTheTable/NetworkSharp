@@ -3,18 +3,30 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31515.178
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetworkFramework", "NetworkFramework\NetworkFramework.csproj", "{04BF6758-B285-4A3A-B782-B229CA093044}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetworkFramework", "NetworkFramework\NetworkFramework.csproj", "{04BF6758-B285-4A3A-B782-B229CA093044}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Publish|Any CPU = Publish|Any CPU
+		Publish|x64 = Publish|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{04BF6758-B285-4A3A-B782-B229CA093044}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{04BF6758-B285-4A3A-B782-B229CA093044}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Debug|x64.ActiveCfg = Debug|x64
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Debug|x64.Build.0 = Debug|x64
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Publish|Any CPU.ActiveCfg = Publish|Any CPU
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Publish|Any CPU.Build.0 = Publish|Any CPU
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Publish|x64.ActiveCfg = Publish|x64
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Publish|x64.Build.0 = Publish|x64
 		{04BF6758-B285-4A3A-B782-B229CA093044}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04BF6758-B285-4A3A-B782-B229CA093044}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Release|x64.ActiveCfg = Release|x64
+		{04BF6758-B285-4A3A-B782-B229CA093044}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
