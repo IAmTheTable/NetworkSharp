@@ -17,7 +17,7 @@ namespace NetworkSharp.Framework.UDP
         /// </summary>
         public event Action<UDPNetworkClient> OnClientConnected;
         /// <summary>
-        /// Event called when teh server receives a packet, returns the packet received and the network client that sent that packet.
+        /// Event called when the server receives a packet, returns the packet received and the network client that sent that packet.
         /// </summary>
         public event Action<UDPPacket, UDPNetworkClient> OnDataReceived;
         /// <summary>
