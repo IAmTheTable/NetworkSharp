@@ -33,6 +33,9 @@ namespace NetworkSharp.Framework.UDP
         /// </summary>
         public int Port { get; private set; }
 
+        /// <summary>
+        /// The primary socket the server uses to communicate with.
+        /// </summary>
         private readonly Socket server;
         /// <summary>
         /// Create and start a new UDP server.
@@ -62,7 +65,10 @@ namespace NetworkSharp.Framework.UDP
                 Logger.Log(Logger.Loglevel.Error, "[Server] Failed to start server\n", e.Message);
             }
         }
-
+        
+        /// <summary>
+        /// Start listening for connections via the specified port.
+        /// </summary>
         public void Listen()
         {
             server.Bind(new IPEndPoint(IPAddress.Any, Port)); // bind the server to the port
@@ -100,6 +106,7 @@ namespace NetworkSharp.Framework.UDP
             await server.SendToAsync(_packet.ToArray(), SocketFlags.None, _destination);
             Logger.Log(Logger.Loglevel.Verbose, $"[Server] Sent packet: {_packet.GetLength()}");
         }
+
         /// <summary>
         /// Called when the server receives data.
         /// </summary>
