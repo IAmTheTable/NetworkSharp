@@ -1,0 +1,415 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetworkSharp</name>
+    </assembly>
+    <members>
+        <member name="E:NetworkSharp.Framework.TCP.TCPNetworkClient.OnDataReceived">
+            <summary>
+            Called when the client Receives data from the server.
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.TCP.TCPNetworkClient.OnConnectToServer">
+            <summary>
+            Called when the client connects to the server.
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.TCP.TCPNetworkClient.MaxBufferSize">
+            <summary>
+            The max amount of bytes the client can receive at once.
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.TCP.TCPNetworkClient.clientEndpoint">
+            <summary>
+            The endpoint of the local client;
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.TCP.TCPNetworkClient.ServerEndpoint">
+            <summary>
+            The endpoint of the server.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.#ctor(System.Net.Sockets.TcpClient)">
+            <summary>
+            Constructs a new client class
+            </summary>
+            <param name="_client">TCPClient instance that is used.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.#ctor">
+            <summary>
+            Create a new Client to use for sending/receiving data.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.Connect(System.String,System.UInt32)">
+            <summary>
+            Connect to a server with a specified IP and Port.
+            </summary>
+            <param name="_ipAddress">IPAddress of the server you are connecting to.</param>
+            <param name="_port">The port of the server you are connecting to.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.OnConnectedToServer(System.IAsyncResult)">
+            <summary>
+            Called when the client is connected to the server.
+            </summary>
+            <param name="ar"></param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.StartRecieving">
+            <summary>
+            Start listening for data from the server.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.GetClient">
+            <summary>
+            Gets the raw TCPClient class used.
+            </summary>
+            <returns>The tcp client used.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.StopRecieving">
+            <summary>
+            Stop reading data from the server.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.SendPacket(NetworkSharp.Framework.TCP.TCPPacket)">
+            <summary>
+            Send a packet to the server.
+            </summary>
+            <param name="_packet">The packet you wish to send.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.OnFinishedWriting(System.IAsyncResult)">
+            <summary>
+            Called when the client finished writing to the stream.
+            </summary>
+            <param name="ar"></param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkClient.OnTcpDataReceived(System.IAsyncResult)">
+            <summary>
+            Called when the client receives data.
+            </summary>
+            <param name="ar"></param>
+        </member>
+        <member name="E:NetworkSharp.Framework.TCP.TCPNetworkServer.OnClientConnected">
+            <summary>
+            Fired when a client is connected to the TCP server.
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.TCP.TCPNetworkServer.OnDataReceived">
+            <summary>
+            Fired when a client sends data to the server.
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.TCP.TCPNetworkServer.OnClientDisconnected">
+            <summary>
+            Fired when a client disconnects from the server.
+            The number returned is the client id that disconnected.
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.TCP.TCPNetworkServer.maxRecieveBuffer">
+            <summary>
+            Max amount of bytes that can be sent/Received in a single buffer.
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.TCP.TCPNetworkServer.ConnectedClients">
+            <summary>
+            A list of clients that are currently connected to the server.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkServer.#ctor(System.Int32)">
+            <summary>
+            Create a new TCPServer and start listening on the specified port.
+            </summary>
+            <param name="_port">The port you wish to listen on.</param>
+            <returns>The TCPNetworkServer instance.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkServer.Listen">
+            <summary>
+            Begin listening for connections on port you specified.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkServer.SendPacket(System.Int32,NetworkSharp.Framework.TCP.TCPPacket)">
+            <summary>
+            Send a packet to the target client.
+            </summary>
+            <param name="_clientIdx">The client index (in the client list) you wish to send the packet to.</param>
+            <param name="_packet">The packet you wish to send.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkServer.SendPacket(NetworkSharp.Framework.TCP.TCPNetworkClient,NetworkSharp.Framework.TCP.TCPPacket)">
+            <summary>
+            Send a packet to the target client.
+            </summary>
+            <param name="_client">The client you wish to send the packet to.</param>
+            <param name="_packet">The packet you wish to send.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkServer.TcpServerEventHandler_OnClientConnected(NetworkSharp.Framework.TCP.TCPNetworkClient)">
+            <summary>
+            Called when a client is connected to the server.
+            </summary>
+            <param name="_client">The client instance that is used.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPNetworkServer.GetState(System.Net.Sockets.TcpClient)">
+            <summary>
+            Get a TCPState from a TcpClient.
+            </summary>
+            <param name="tcpClient">The client to get the state from.</param>
+            <returns>TcpState of the client.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPPacket.WriteLength">
+            <summary>
+            Write the length of the packet at the beginning, (You dont need to worry about this)
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.TCP.TCPPacket.ToArray">
+            <summary>
+            Conver the packet into an array of bytes.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:NetworkSharp.Framework.UDP.UDPNetworkClient">
+            <summary>
+            An easy to use UDP Client for sending and receiving data.
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.UDP.UDPNetworkClient.OnConnectToServer">
+            <summary>
+            Called when the client is connected to the server.
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.UDP.UDPNetworkClient.OnDataReceived">
+            <summary>
+            Called when the client Received data.
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.UDP.UDPNetworkClient.MaxBufferSize">
+            <summary>
+            The max amount of bytes the client can receive/send at once.
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.UDP.UDPNetworkClient.ServerEndpoint">
+            <summary>
+            The endpoint of the server.
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.UDP.UDPNetworkClient.LocalEndpoint">
+            <summary>
+            The endpoint of the client
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.UDP.UDPNetworkClient.client">
+            <summary>
+            The socket used
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.UDP.UDPNetworkClient.isReading">
+            <summary>
+            Is the client already reading data from the network?
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.#ctor(System.Net.IPEndPoint,System.Net.IPEndPoint)">
+            <summary>
+            Create a new UDP Client instance(used by the server).
+            </summary>
+            <param name="_client"></param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.#ctor">
+            <summary>
+            Create a new UDP Client instance.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.Connect(System.String,System.UInt32)">
+            <summary>
+            Connect to a UDP server
+            </summary>
+            <param name="_ipAddress">IP of the server</param>
+            <param name="_port">Port of the server</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.StartReceiving">
+            <summary>
+            Start receiving data from the server.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.StopReceiving">
+            <summary>
+            Stop receiving data from the server.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.SendPacket(NetworkSharp.Framework.UDP.UDPPacket)">
+            <summary>
+            Send a packet to the server.
+            </summary>
+            <param name="_packet">The packet of data you wish to send.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.GetClient">
+            <summary>
+            Get the network socket object used.
+            </summary>
+            <returns>The socket this client uses.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.ReceiveMessage">
+            <summary>
+            Locally get the message.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkClient.OnClientDataReceived(System.Byte[],System.Net.EndPoint,System.Int32)">
+            <summary>
+            Called when the client receives data.
+            </summary>
+            <param name="_dataReceived">Bytes received</param>
+            <param name="_clientEP">Endpoint of the data source</param>
+            <param name="_amountDataReceived">The amount of data received</param>
+        </member>
+        <member name="T:NetworkSharp.Framework.UDP.UDPNetworkServer">
+            <summary>
+            An easy to use class for a UDP server.
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.UDP.UDPNetworkServer.OnClientConnected">
+            <summary>
+            Called when a client is connected
+            </summary>
+        </member>
+        <member name="E:NetworkSharp.Framework.UDP.UDPNetworkServer.OnDataReceived">
+            <summary>
+            Event called when teh server receives a packet, returns the packet received and the network client that sent that packet.
+            </summary>
+        </member>
+        <member name="F:NetworkSharp.Framework.UDP.UDPNetworkServer.MaxRecieveBuffer">
+            <summary>
+            The max amount of data that can be sent/Received in the buffer.
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.UDP.UDPNetworkServer.ConnectedClients">
+            <summary>
+            The list of connected clients.
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.UDP.UDPNetworkServer.Port">
+            <summary>
+            The port in the network that the server is currently listening on.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkServer.#ctor(System.Int32)">
+            <summary>
+            Create and start a new UDP server.
+            </summary>
+            <param name="_port">The port on the network you wish to listen on.</param>
+            <returns>The new instance of the UDP Server.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkServer.ReceiveMessage">
+            <summary>
+            Recieve the next message from the client.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkServer.SendPacket(NetworkSharp.Framework.UDP.UDPPacket,System.Net.IPEndPoint)">
+            <summary>
+            Send a packet to a client.
+            </summary>
+            <param name="_packet">The packet you wish to send.</param>
+            <param name="_destination">The IPEndPoint of the client you wish to send the packet to.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPNetworkServer.OnServerDataReceived(System.Byte[],System.Net.EndPoint,System.Int32)">
+            <summary>
+            Called when the server receives data.
+            </summary>
+            <param name="_dataReceived">The data the server receives (in a byte array)</param>
+            <param name="_clientEP">The EndPoint of the client that sent the data.</param>
+            <param name="_amountDataReceived">The amount of bytes the client sent.</param>
+        </member>
+        <member name="T:NetworkSharp.Framework.UDP.UDPPacket">
+            <summary>
+            A packet of data(in bytes) that is either sent or recieved.
+            </summary>
+        </member>
+        <member name="P:NetworkSharp.Framework.UDP.UDPPacket.ReadPos">
+            <summary>
+            The index of the current read position in the packet.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.#ctor">
+            <summary>
+            Create a new UDPPacket to use.
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.#ctor(System.Byte[])">
+            <summary>
+            Create a UDPPacket from existing data.
+            </summary>
+            <param name="_data"></param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.WriteByte(System.Byte)">
+            <summary>
+            Write a single byte to the packet.
+            </summary>
+            <param name="_data">The byte you wish to write.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.WriteInt(System.Int32)">
+            <summary>
+            Write an integer to the packet.
+            </summary>
+            <param name="_data">The integer you wish to write.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.WriteString(System.String)">
+            <summary>
+            Write a string to the packet.
+            </summary>
+            <param name="_data">The string you wish to write.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.WriteShort(System.Int16)">
+            <summary>
+            Write an Int16(short) to the packet.
+            </summary>
+            <param name="_data">The Int16(short) you wish to write.</param>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.ReadByte(System.Boolean)">
+            <summary>
+            Read a single byte from the packet.
+            </summary>
+            <param name="increasePos">False if you wish to be able to read the next value, otherwise the next Read call will read on.</param>
+            <returns>The value of the byte you read.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.ReadShort(System.Boolean)">
+            <summary>
+            Read a single Int16(short) from the packet.
+            </summary>
+            <param name="increasePos">False if you wish to be able to read the next value, otherwise the next Read call will read on.</param>
+            <returns>The value of the Int16(short) you read.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.ReadInt(System.Boolean)">
+            <summary>
+            Read a single int from the packet.
+            </summary>
+            <param name="increasePos">False if you wish to be able to read the next value, otherwise the next Read call will read on.</param>
+            <returns>The value of the int you read.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.ReadString(System.Boolean)">
+            <summary>
+            Read a string from the packet.
+            </summary>
+            <param name="increasePos">False if you wish to be able to read the next value, otherwise the next Read call will read on.</param>
+            <returns>The value of the string you read.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.ReadBytes(System.Int32,System.Boolean)">
+            <summary>
+            Read an array of bytes from the packet.
+            </summary>
+            <param name="increasePos">False if you wish to be able to read the next value, otherwise the next Read call will read on.</param>
+            <param name="Amount">Amount of bytes you wish to read.</param>
+            <returns>The array of bytes you read.</returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.InsertLength">
+            <summary>
+            Write the packet length. (excluding the addition of this insertion)
+            </summary>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.ToArray">
+            <summary>
+            Convert the packet to a byte array.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:NetworkSharp.Framework.UDP.UDPPacket.GetLength">
+            <summary>
+            Get how many bytes there are in the packet.
+            </summary>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
